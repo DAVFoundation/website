@@ -1,5 +1,7 @@
 var GOOGLE_GEOLOCATION_API_KEY = 'AIzaSyDOtBrAgfz68KEzcoArjq5MK9mNh6Uq1V8'
 
+var KYC_MEMBERS_URL = 'https://a6e4u0sw16.execute-api.us-east-1.amazonaws.com/staging/members';
+
 var ETH_NODE_URL = 'https://ropsten.infura.io/wUiZtmeZ1KwjFrcC8zRO';
 //const ETH_NODE_URL = 'https://mainnet.infura.io/wUiZtmeZ1KwjFrcC8zRO';
 
@@ -16,21 +18,31 @@ function numberWithCommas(number) {
   return parts.join(".");
 }
 
-var $ethRaised = $("#eth-raised");
 function updateEthRaised() {
   window.contractInstance.methods.weiRaised().call(function(error, results) {
     if(!error) {
       weiRaised = results;
       var ethRaisedValue = Number(web3.utils.fromWei(weiRaised, 'ether'));
-      increaseWithAnimation(ethRaisedValue);
+      increaseWithAnimation($("#eth-raised"), ethRaisedValue);
+    }
+  });
+}
+
+function updateEthWhitelisted() {
+  $.ajax({
+    url: KYC_MEMBERS_URL,
+    type: 'GET',
+    success: function(result) {
+      let ethWhitelisted = result;
+      increaseWithAnimation($("#eth-whitelisted"), ethWhitelisted);
     }
   });
 }
 
 var ANIMATION_DURATION = 1000;
 var PULSE_DURATION = 40;
-function increaseWithAnimation(newValue) {
-  var currentValue = Number($ethRaised.text().replace(/,/g , ''));
+function increaseWithAnimation(ethCountElement,newValue) {
+  var currentValue = Number(ethCountElement.text().replace(/,/g , ''));
   var pulseValue = (newValue - currentValue) / (ANIMATION_DURATION / PULSE_DURATION);
 
   var interval = setInterval(increaseInPulse, PULSE_DURATION);
@@ -41,13 +53,16 @@ function increaseWithAnimation(newValue) {
       currentValue=newValue;
       clearInterval(interval);
     }
-    $ethRaised.text(numberWithCommas(Math.floor(currentValue)));
+    ethCountElement.text(numberWithCommas(Math.floor(currentValue)));
   } 
 }
 
 $(document).ready(function(){
   updateEthRaised();
-  setInterval(() => updateEthRaised(), 2000);
+  setInterval(() => updateEthRaised(), 10000);
+
+  updateEthWhitelisted();
+  setInterval(() => updateEthWhitelisted(), 10000);
   
   setDifferentCtaForAdwordsUsers();
   getVisitorCountry(setDifferentCtaForDifferentCountry, function(){$(".telegram-bottom").addClass("telegram-loaded");});
